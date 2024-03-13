@@ -1,0 +1,1 @@
+# ngrx-signal-store-crash-course
