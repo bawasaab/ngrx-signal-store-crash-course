@@ -1,0 +1,15 @@
+<div class="app">
+  <h1>{{title}}</h1>
+</div>
+
+<!-- {{store.todos() | json }} -->
+
+@if (!store.loading()) {
+  <todos-list />
+}
+@else {
+  <mat-spinner />
+}
+
+
+<router-outlet />

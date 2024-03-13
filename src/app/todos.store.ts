@@ -1,0 +1,77 @@
+import { Todo } from '../model/todo.model';
+import { patchState, signalStore, withComputed, withMethods, withState } from "@ngrx/signals";
+import { TodosService } from "./services/todos.service";
+import { computed, inject } from "@angular/core";
+
+export type TodosFilter = "all" | "pending" | "completed";
+
+type TodoState = {
+  todos: Todo[];
+  loading: boolean;
+  filter: TodosFilter;
+}
+
+const inintialState: TodoState = {
+  todos: [],
+  loading: false,
+  filter: 'all'
+}
+
+export const TodoStore = signalStore(
+  {providedIn: 'root'},
+  withState(inintialState),
+  withMethods(
+    (store, todosService = inject(TodosService)) => ({
+
+      async loadAll() {
+
+        patchState(store, {loading: true});
+        const todos = await todosService.getTodos();
+        patchState(store, {todos, loading: false});
+      },
+
+      async addTodo(title: string) {
+
+        const todo = await todosService.addTodo({title, completed: false})
+        patchState(store, (state) => ({
+          todos: [...state.todos, todo]
+        }))
+      },
+
+      async deleteTodo(id: number) {
+
+        const todo = await todosService.deleteTodo(id)
+        patchState(store, (state) => ({
+          todos: state.todos.filter(todo => todo.id !== id)
+        }))
+      },
+
+      async updateTodo(id: number, completed: boolean) {
+        const todo = await todosService.updateTodo(id, completed)
+        // patchState(store, (state) => ({}))
+        patchState(store, (state) => ({
+          todos: state.todos.map(todo => todo.id == id ? {...todo, completed} : todo)
+        }))
+      },
+
+      async updateFilter(filter: TodosFilter) {
+        patchState(store, {filter})
+      }
+    })
+  ),
+  // withComputed((state) => ({}))
+  withComputed((state) => ({
+    filteredTodos: computed(() => {
+      const todos = state.todos()
+
+      switch(state.filter()) {
+        case 'all':
+          return todos
+        case 'pending':
+          return todos.filter(todo => !todo.completed)
+        case 'completed':
+          return todos.filter(todo => todo.completed)
+      }
+    })
+  }))
+)
